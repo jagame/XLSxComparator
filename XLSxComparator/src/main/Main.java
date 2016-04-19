@@ -31,27 +31,29 @@ public class Main {
         File first;
         File second;
         File logPath;
-        
-        JOptionPane.showMessageDialog(null, "Dame la ruta de un fichero excel");
-        first = getAnyFile();
-        JOptionPane.showMessageDialog(null, "Dame la ruta de otro fichero excel");
-        second = getAnyFile();
-        JOptionPane.showMessageDialog(null, "Dame la ruta donde guardar el log");
-        logPath = getAnyFile();
-        
-        try( Workbook excel1 = XlsFactory.getWorkbook(first); Workbook excel2 = XlsFactory.getWorkbook(second) ){
+        try{
 
-            XlsComparator.comparaExcel(excel1, excel2, cache);
+            JOptionPane.showMessageDialog(null, "Dame la ruta de un fichero excel");
+            first = getAnyFile();
+            JOptionPane.showMessageDialog(null, "Dame la ruta de otro fichero excel");
+            second = getAnyFile();
+            JOptionPane.showMessageDialog(null, "Dame la ruta donde guardar el log");
+            logPath = getAnyFile();
 
-            System.out.println( cache.toString().isEmpty()?"Todo es correcto":cache );
-        }catch(IOException e){
-            cache.append("Error al abrir los ficheros XLS: ").append(e.getStackTrace());
-        }
-        
-        try( FileWriter fw = new FileWriter(logPath) ){
-            fw.append(cache);
-        }catch(IOException e){
-            JOptionPane.showMessageDialog(null, e.getStackTrace(), "Error al crear Log", JOptionPane.ERROR_MESSAGE);
+            try( Workbook excel1 = XlsFactory.getWorkbook(first); Workbook excel2 = XlsFactory.getWorkbook(second) ){
+
+                XlsComparator.comparaExcel(excel1, excel2, cache);
+
+                System.out.println( cache.toString().isEmpty()?"Todo es correcto":cache );
+            }
+
+            try( FileWriter fw = new FileWriter(logPath) ){
+                String res = cache.toString().replace("$Excel1$", first.getName()).replace("$Excel2$", second.getName());
+                fw.append( res );
+            }
+            
+        }catch(NullPointerException|IOException ex){
+            JOptionPane.showMessageDialog(null, ex.getStackTrace(), ex.getLocalizedMessage(), JOptionPane.ERROR_MESSAGE);
         }
     }
     

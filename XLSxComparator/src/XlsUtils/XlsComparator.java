@@ -38,17 +38,25 @@ public class XlsComparator {
     
     public static boolean comparaHoja(Sheet hoja1, Sheet hoja2, StringBuilder cache){
         boolean res = true;
-        int numRows1 = hoja1.getPhysicalNumberOfRows();
-        int numRows2 = hoja2.getPhysicalNumberOfRows();
+        int numRows1 = hoja1.getLastRowNum(); // Te devuelve el índice de la última fila
+        int numRows2 = hoja2.getLastRowNum();
         int maxNumRows = numRows1 > numRows2?numRows1:numRows2;
+        Row row1;
+        Row row2;
         
-        try{
-            for( int i = 0 ; i < maxNumRows ; i++ ){
-                if( ! comparaFila( hoja1.getRow(i), hoja2.getRow(i), cache ) )
-                    res = false;
+        for( int i = 0 ; i <= maxNumRows ; i++ ){
+            try{
+                row1 = hoja1.getRow(i);
+            }catch(NullPointerException|IllegalArgumentException ex){
+                row1 = null;
             }
-        }catch(IllegalArgumentException|NullPointerException e){
-            res = false;
+            try{
+                row2 = hoja2.getRow(i);
+            }catch(NullPointerException|IllegalArgumentException ex){
+                row2 = null;
+            }
+            if( ! comparaFila( row1, row2, cache ) )
+                res = false;
         }
         
         return res;
@@ -56,18 +64,37 @@ public class XlsComparator {
     
     public static boolean comparaFila(Row fila1, Row fila2, StringBuilder cache){
         boolean res = true;
-        
-        int numCell1 = fila1.getPhysicalNumberOfCells();
-        int numCell2 = fila2.getPhysicalNumberOfCells();
-        int maxNumCells = numCell1 > numCell2?numCell1:numCell2;
+        int numCell1;
+        int numCell2;
+        Cell cell1;
+        Cell cell2;
         
         try{
-            for( int i = 0 ; i < maxNumCells ; i++ ){
-                if( ! comparaCelda( fila1.getCell(i), fila2.getCell(i), cache ) )
-                    res = false;
+            numCell1 = fila1.getLastCellNum(); // Te devuelve el índice de la última celda MÁS 1
+        }catch( NullPointerException e){
+            numCell1 = 0;
+        }
+        try{
+            numCell2 = fila2.getLastCellNum();
+        }catch(NullPointerException e){
+            numCell2 = 0;
+        }
+        
+        int maxNumCells = numCell1 > numCell2?numCell1:numCell2;
+        
+        for( int i = 0 ; i < maxNumCells ; i++ ){
+            try{
+                cell1 = fila1.getCell(i);
+            }catch(NullPointerException|IllegalArgumentException ex){
+                cell1 = null;
             }
-        }catch(IllegalArgumentException|NullPointerException e){
-            res = false;
+            try{
+                cell2 = fila2.getCell(i);
+            }catch(NullPointerException|IllegalArgumentException ex){
+                cell2 = null;
+            }
+            if( ! comparaCelda( cell1, cell2, cache ) )
+                res = false;
         }
         
         return res;
@@ -79,21 +106,25 @@ public class XlsComparator {
         String adress;
         boolean res;
         
-        try{
-            res = value1.equals(value2);
-            adress = celda1.getAddress().formatAsString();
-        }catch(NullPointerException ex){
-            res = value2.equals(value1);
-            adress = celda2.getAddress().formatAsString();
+//        Esta primera comparación nos libra de 3 casos, 1 de ellos problemático:
+//        1) Son primitivos iguales por lo que no hay que hacer más gestión
+//        2) Son el mismo objeto por lo que no hay que hacer más gestión
+//        3) Son los 2 nulos, lo cual controlar podría ensuciar el código y realmente eso significa que son iguales y no hay que hacer más gestión
+        if( value1 == value2 )
+            res = true;
+        else{
+            try{
+                res = value1.equals(value2);
+                adress = celda1.getAddress().formatAsString();
+            }catch(NullPointerException ex){
+                res = value2.equals(value1);
+                adress = celda2.getAddress().formatAsString();
+            }
+
+            if( cache != null && !res )
+                cache.append("DEBUG:: El valor de ").append(adress).append(" es diferente en los 2 excel: ").append("$Excel1$: ").append(value1).append(" || ").append("$Excel2$: ").append(value2).append("\r\n");
         }
         
-        if( !res )
-            cache.append("El valor de ").append(adress).append(" es diferente en los 2 excel:\n")
-                    .append("Excel 1:").append(value1)
-                    .append("\n")
-                    .append("Excel 2:").append(value2)
-                    .append("\n");
-            
         return res;
     }
     
